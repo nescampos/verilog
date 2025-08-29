@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Filecoin Log Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #333;
+            text-align: center;
+        }
+        .endpoint {
+            background-color: #e9f7fe;
+            border: 1px solid #bee9ff;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 20px 0;
+            text-align: center;
+            font-family: monospace;
+        }
+        .actions {
+            display: flex;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .actions button {
+            flex: 1;
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .actions button:hover {
+            background-color: #45a049;
+        }
+        .actions button.get {
+            background-color: #2196F3;
+        }
+        .actions button.get:hover {
+            background-color: #0b7dda;
+        }
+        .actions button.post {
+            background-color: #FF9800;
+        }
+        .actions button.post:hover {
+            background-color: #e68a00;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+        .success {
+            background-color: #dff0d8;
+            color: #3c763d;
+            border: 1px solid #d6e9c6;
+        }
+        .error {
+            background-color: #f2dede;
+            color: #a94442;
+            border: 1px solid #ebccd1;
+        }
+        .log-entry {
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .log-entry h3 {
+            margin-top: 0;
+            color: #555;
+        }
+        .log-data {
+            background-color: #f0f0f0;
+            padding: 10px;
+            border-radius: 3px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #777;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Filecoin Log Demo</h1>
+        
+        <div class="endpoint">
+            <p>All HTTP requests to this demo app are automatically logged to Filecoin.</p>
+            <p><strong>API Endpoint:</strong> http://localhost:3000</p>
+        </div>
+        
+        <h2>Test API Endpoints</h2>
+        <p>Click the buttons below to make requests to the API. Each request will be automatically logged to Filecoin.</p>
+        
+        <div class="actions">
+            <button id="getData" class="get">GET /api/data</button>
+            <button id="postData" class="post">POST /api/data</button>
+        </div>
+        
+        <div id="result" class="result"></div>
+        
+        <h2>How It Works</h2>
+        <div class="log-entry">
+            <p>This demo app automatically captures all HTTP requests and sends them as logs to the Filecoin storage API.</p>
+            <p>Every request to any endpoint in this app generates a log entry with:</p>
+            <ul>
+                <li>Timestamp</li>
+                <li>HTTP method (GET, POST, etc.)</li>
+                <li>Requested URL</li>
+                <li>Request headers</li>
+                <li>User agent</li>
+                <li>IP address</li>
+                <li>Response status code</li>
+                <li>Response time</li>
+            </ul>
+            <p>These logs are then sent to the Filecoin storage API and stored on the Filecoin network.</p>
+        </div>
+    </div>
+    
+    <footer>
+        <p>All HTTP requests are automatically logged to Filecoin</p>
+    </footer>
+
+    <script>
+        // Get DOM elements
+        const getDataButton = document.getElementById('getData');
+        const postDataButton = document.getElementById('postData');
+        const resultDiv = document.getElementById('result');
+        
+        // Show result message
+        function showResult(message, isSuccess) {
+            resultDiv.textContent = message;
+            resultDiv.className = `result ${isSuccess ? 'success' : 'error'}`;
+            resultDiv.style.display = 'block';
+            
+            // Hide result after 5 seconds
+            setTimeout(() => {
+                resultDiv.style.display = 'none';
+            }, 5000);
+        }
+        
+        // Make GET request
+        async function getData() {
+            try {
+                const response = await fetch('/api/data');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult(`GET request successful. Check the server console for Filecoin log details.`, true);
+                } else {
+                    showResult(`GET request failed: ${data.error || 'Unknown error'}`, false);
+                }
+            } catch (error) {
+                showResult(`Error: ${error.message}`, false);
+            }
+        }
+        
+        // Make POST request
+        async function postData() {
+            try {
+                const response = await fetch('/api/data', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: 'Hello Filecoin!',
+                        timestamp: new Date().toISOString()
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult(`POST request successful. Check the server console for Filecoin log details.`, true);
+                } else {
+                    showResult(`POST request failed: ${data.error || 'Unknown error'}`, false);
+                }
+            } catch (error) {
+                showResult(`Error: ${error.message}`, false);
+            }
+        }
+        
+        // Add event listeners to buttons
+        getDataButton.addEventListener('click', getData);
+        postDataButton.addEventListener('click', postData);
+    </script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+{
+  "name": "filecoin-log-client",
+  "version": "1.0.0",
+  "description": "Client library to send HTTP log data to a Filecoin storage API.",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": ["filecoin", "log", "client"],
+  "author": "Your Name",
+  "license": "MIT"
+}
