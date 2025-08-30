@@ -34,6 +34,8 @@ app.use(async (req, res, next) => {
   const logEntry = {
     timestamp: new Date().toISOString(),
     method: req.method,
+    sourceId: 'demo-server', // Static sourceId for demo
+    eventType: 'http-request',
     url: req.url,
     headers: req.headers,
     userAgent: req.get('User-Agent'),
