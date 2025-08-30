@@ -3,12 +3,38 @@ import dotenv from 'dotenv';
 import crypto from 'crypto'; // Import crypto module for hashing
 import { getStorageService, initializeSynapse } from './synapseClient.js';
 
+// We need to import Synapse to access the download method
+// Assuming it's exported from the SDK
+import { Synapse } from '@filoz/synapse-sdk';
+
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(express.json({ limit: '10mb' })); // Adjust limit as needed for log data
+// Middleware to parse JSON bodies
+app.use(express.json({ limit: '10mb' }));
+// Middleware to serve static files (for downloading)
+app.use(express.static('public'));
+
+// Helper function to get a Synapse instance
+// Since download is a method on Synapse, not StorageService
+async function getSynapseInstance() {
+  // This will ensure Synapse is initialized
+  await initializeSynapse();
+  // We need to find a way to get the synapse instance
+  // Let's re-initialize it to get the instance
+  // Note: This might not be the most efficient way if initializeSynapse has side effects
+  // A better approach might be to export the synapse instance from synapseClient.js
+  // For now, we'll re-create it with the same config
+  const synapse = await Synapse.create({
+    privateKey: process.env.PRIVATE_KEY,
+    rpcURL: process.env.RPC_URL || 'https://api.calibration.node.glif.io/rpc/v1', // Use env var or default to calibration
+    withCDN: true,
+    authorization: process.env.GLIF_TOKEN ? `Bearer ${process.env.GLIF_TOKEN}` : undefined
+  });
+  return synapse;
+}
 
 app.post('/upload-log', async (req, res) => {
   try {
@@ -25,10 +51,6 @@ app.post('/upload-log', async (req, res) => {
     
     if (typeof logData.eventType !== 'string' || logData.eventType.trim() === '') {
         return res.status(400).json({ error: 'Log data must include a non-empty "eventType" string.' });
-    }
-
-    if (typeof logData.timestamp !== 'string' || logData.timestamp.trim() === '') {
-        return res.status(400).json({ error: 'Log data must include a non-empty "timestamp" string.' });
     }
 
     // 2. Add a hash of the log data
@@ -100,6 +122,45 @@ app.post('/verify-event', async (req, res) => {
       res.status(400).json({ error: `Invalid CommP provided: ${error.message}` });
     } else {
       res.status(500).json({ error: 'Failed to verify event status.' });
+    }
+  }
+});
+
+// New endpoint to download log data by its CommP
+app.get('/download-log/:commp', async (req, res) => {
+  try {
+    const { commp } = req.params;
+
+    if (!commp || typeof commp !== 'string') {
+      return res.status(400).json({ error: 'A valid "commp" parameter is required in the URL.' });
+    }
+
+    // Get a Synapse instance to use the download method
+    const synapse = await getSynapseInstance();
+    
+    // Use the Synapse SDK's download function to retrieve the data
+    // We'll use withCDN for potentially faster downloads
+    const data = await synapse.download(commp, { withCDN: true });
+
+    // Set appropriate headers for file download
+    // Assuming the data is JSON (as we're storing logs)
+    res.set({
+      'Content-Type': 'application/json',
+      'Content-Disposition': `attachment; filename="log-${commp}.json"`
+    });
+    
+    // Send the downloaded data
+    // Decode the Uint8Array to a string
+    const decodedData = new TextDecoder().decode(data);
+    res.status(200).send(decodedData);
+    
+  } catch (error) {
+    console.error('Error downloading log:', error);
+    // Differentiate between client errors (4xx) and server errors (5xx)
+    if (error.message && (error.message.includes('Invalid CommP') || error.message.includes('not found') || error.code === 'INVALID_INPUT')) {
+      res.status(404).json({ error: `Log data not found for CommP: ${req.params.commp}` });
+    } else {
+      res.status(500).json({ error: 'Failed to download log data.' });
     }
   }
 });

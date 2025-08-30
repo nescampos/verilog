@@ -64,6 +64,40 @@ class FilecoinLogClient {
       throw error; // Re-throw for caller to handle
     }
   }
+  
+  /**
+   * Downloads the log data stored on Filecoin using its CommP.
+   * @param {string} commp - The CommP (Piece Commitment) of the stored log/event.
+   * @returns {Promise<Object>} - A promise that resolves to the downloaded log data as a JSON object.
+   */
+  async downloadLog(commp) {
+    try {
+      if (!commp || typeof commp !== 'string') {
+        throw new Error('A valid "commp" string is required.');
+      }
+      
+      const response = await fetch(`${this.apiEndpoint}/download-log/${commp}`);
+      
+      if (!response.ok) {
+        // Try to get error message from response body
+        let errorMessage = `API download request failed: ${response.status}`;
+        try {
+          const errorText = await response.text();
+          errorMessage = errorText || errorMessage;
+        } catch (e) {
+          // Ignore errors in getting error text
+        }
+        throw new Error(errorMessage);
+      }
+      
+      // Parse the JSON response
+      const logData = await response.json();
+      return logData;
+    } catch (error) {
+      console.error('Error downloading log from API:', error);
+      throw error; // Re-throw for caller to handle
+    }
+  }
 }
 
 // Default export

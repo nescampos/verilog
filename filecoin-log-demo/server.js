@@ -20,7 +20,7 @@ app.use(express.json({ limit: '10mb' }));
 async function sendLogToFilecoin(logData) {
   try {
     const result = await logClient.sendLog(logData);
-    console.log(`Log sent successfully. CommP: ${result.commp}`);
+    console.log(`Log sent successfully. CommP: ${result.commp}, Hash: ${result.logHash}`);
     return result;
   } catch (error) {
     console.error('Error sending log to Filecoin:', error);
@@ -35,6 +35,8 @@ app.use(async (req, res, next) => {
     timestamp: new Date().toISOString(),
     method: req.method,
     url: req.url,
+    sourceId: 'filecoin-log-demo', // Required field
+    eventType: 'user_action',      // Required field
     headers: req.headers,
     userAgent: req.get('User-Agent'),
     ipAddress: req.ip || req.connection.remoteAddress,
