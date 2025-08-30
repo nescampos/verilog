@@ -18,9 +18,14 @@ app.use(express.json({ limit: '10mb' }));
 
 // Function to send log to Filecoin
 async function sendLogToFilecoin(logData) {
+  console.log('Attempting to send log to Filecoin:', JSON.stringify(logData, null, 2));
   try {
     const result = await logClient.sendLog(logData);
-    console.log(`Log sent successfully. CommP: ${result.commp}, Hash: ${result.logHash}`);
+    console.log(`Log sent successfully.`);
+    console.log(`  CommP: ${result.commp}`);
+    console.log(`  Log Hash: ${result.logHash}`);
+    // A developer might want to store these identifiers for later verification or reference
+    // For example: saveToDatabase({ commp: result.commp, logHash: result.logHash, timestamp: logData.timestamp });
     return result;
   } catch (error) {
     console.error('Error sending log to Filecoin:', error);
@@ -52,7 +57,10 @@ app.use(async (req, res, next) => {
     logEntry.statusCode = res.statusCode;
     
     // Send log to Filecoin (non-blocking)
-    sendLogToFilecoin(logEntry);
+    // Use setImmediate to ensure this doesn't block the response
+    setImmediate(async () => {
+      await sendLogToFilecoin(logEntry);
+    });
   });
 
   next();

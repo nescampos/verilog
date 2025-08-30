@@ -52,8 +52,18 @@ app.post('/upload-log', async (req, res) => {
     if (typeof logData.eventType !== 'string' || logData.eventType.trim() === '') {
         return res.status(400).json({ error: 'Log data must include a non-empty "eventType" string.' });
     }
+    
+    // 2. Validate timestamp
+    if (!logData.timestamp) {
+        return res.status(400).json({ error: 'Log data must include a "timestamp".' });
+    }
+    
+    const timestamp = new Date(logData.timestamp);
+    if (isNaN(timestamp.getTime())) {
+        return res.status(400).json({ error: 'Log data "timestamp" must be a valid ISO 8601 date string.' });
+    }
 
-    // 2. Add a hash of the log data
+    // 3. Add a hash of the log data
     // Create a deep copy of logData to avoid modifying the original object for hashing
     const logDataForHashing = JSON.parse(JSON.stringify(logData));
     // Remove the hash property if it exists to prevent self-referencing in the hash
