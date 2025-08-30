@@ -71,6 +71,40 @@ app.post('/upload-log', async (req, res) => {
   }
 });
 
+// New endpoint to verify an event by its CommP
+app.post('/verify-event', async (req, res) => {
+  try {
+    const { commp } = req.body;
+
+    if (!commp || typeof commp !== 'string') {
+      return res.status(400).json({ error: 'A valid "commp" string is required in the request body.' });
+    }
+
+    // Get storage service instance (ensures Synapse is initialized)
+    const storage = await getStorageService();
+    
+    // Use the Synapse SDK's pieceStatus function to check the status of the piece
+    const status = await storage.pieceStatus(commp);
+
+    // Return the status information as JSON
+    res.status(200).json({
+      exists: status.exists,
+      proofSetLastProven: status.proofSetLastProven,
+      proofSetNextProofDue: status.proofSetNextProofDue
+    });
+    
+  } catch (error) {
+    console.error('Error verifying event:', error);
+    // Differentiate between client errors (4xx) and server errors (5xx)
+    if (error.message && (error.message.includes('Invalid CommP') || error.code === 'INVALID_INPUT')) {
+      res.status(400).json({ error: `Invalid CommP provided: ${error.message}` });
+    } else {
+      res.status(500).json({ error: 'Failed to verify event status.' });
+    }
+  }
+});
+
+
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'OK', message: 'API is running.' });
 });

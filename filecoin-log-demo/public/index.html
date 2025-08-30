@@ -36,15 +36,21 @@
             gap: 15px;
             margin: 20px 0;
         }
-        .actions button {
+        .actions.vertical {
+            flex-direction: column;
+        }
+        .actions button, .actions input {
             flex: 1;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        .actions button {
             background-color: #4CAF50;
             color: white;
-            padding: 15px;
-            border: none;
-            border-radius: 5px;
             cursor: pointer;
-            font-size: 16px;
+            border: none;
         }
         .actions button:hover {
             background-color: #45a049;
@@ -60,6 +66,12 @@
         }
         .actions button.post:hover {
             background-color: #e68a00;
+        }
+        .actions button.verify {
+            background-color: #9C27B0;
+        }
+        .actions button.verify:hover {
+            background-color: #7B1FA2;
         }
         .result {
             margin-top: 20px;
@@ -95,6 +107,16 @@
             font-family: monospace;
             white-space: pre-wrap;
         }
+        .verification-result {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #e0e0e0;
+        }
+        .verification-result h4 {
+            margin-top: 0;
+            color: #333;
+        }
         footer {
             text-align: center;
             margin-top: 30px;
@@ -120,6 +142,14 @@
             <button id="postData" class="post">POST /api/data</button>
         </div>
         
+        <h2>Verify Event on Filecoin</h2>
+        <p>Enter a CommP to check its status on Filecoin. This will not send any new logs.</p>
+        <div class="actions vertical">
+            <input type="text" id="commpInput" placeholder="Enter CommP (e.g., baga6ea...)" />
+            <button id="verifyData" class="verify">Verify Event</button>
+        </div>
+        <div id="verificationResult" class="verification-result" style="display: none;"></div>
+        
         <div id="result" class="result"></div>
         
         <h2>How It Works</h2>
@@ -128,6 +158,8 @@
             <p>Every request to any endpoint in this app generates a log entry with:</p>
             <ul>
                 <li>Timestamp</li>
+                <li>Source ID (demo app identifier)</li>
+                <li>Event type (e.g., "user_action")</li>
                 <li>HTTP method (GET, POST, etc.)</li>
                 <li>Requested URL</li>
                 <li>Request headers</li>
@@ -136,7 +168,9 @@
                 <li>Response status code</li>
                 <li>Response time</li>
             </ul>
+            <p>The timestamp, sourceId, and eventType are required, if not, log is rejected.</p> 
             <p>These logs are then sent to the Filecoin storage API and stored on the Filecoin network.</p>
+            <p>You can also verify the status of any stored log by entering its CommP in the verification section above.</p>
         </div>
     </div>
     
@@ -148,9 +182,12 @@
         // Get DOM elements
         const getDataButton = document.getElementById('getData');
         const postDataButton = document.getElementById('postData');
+        const verifyDataButton = document.getElementById('verifyData');
+        const commpInput = document.getElementById('commpInput');
         const resultDiv = document.getElementById('result');
+        const verificationResultDiv = document.getElementById('verificationResult');
         
-        // Show result message
+        // Show result message for general actions
         function showResult(message, isSuccess) {
             resultDiv.textContent = message;
             resultDiv.className = `result ${isSuccess ? 'success' : 'error'}`;
@@ -160,6 +197,23 @@
             setTimeout(() => {
                 resultDiv.style.display = 'none';
             }, 5000);
+        }
+        
+        // Show verification result
+        function showVerificationResult(status) {
+            let resultHtml = `<h4>Verification Result</h4>`;
+            if (status.exists !== undefined) {
+                resultHtml += `<p><strong>Exists:</strong> ${status.exists ? 'Yes' : 'No'}</p>`;
+                if (status.exists) {
+                    resultHtml += `<p><strong>Last Proven:</strong> ${status.proofSetLastProven || 'N/A'}</p>`;
+                    resultHtml += `<p><strong>Next Proof Due:</strong> ${status.proofSetNextProofDue || 'N/A'}</p>`;
+                }
+            } else {
+                // If it's an error object from the API
+                resultHtml += `<p class="error"><strong>Error:</strong> ${status.error || 'Unknown error occurred.'}</p>`;
+            }
+            verificationResultDiv.innerHTML = resultHtml;
+            verificationResultDiv.style.display = 'block';
         }
         
         // Make GET request
@@ -187,7 +241,11 @@
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
+                        sourceId: 'filecoin-log-demo', // Adding required fields for validation
+                        eventType: 'user_action',      // Adding required fields for validation
                         message: 'Hello Filecoin!',
+                        sourceId: 'filecoin-log-demo',
+                        eventType: 'user_action',
                         timestamp: new Date().toISOString()
                     })
                 });
@@ -204,9 +262,41 @@
             }
         }
         
+        // Verify event by CommP - this now calls the demo app's server-side endpoint
+        async function verifyData() {
+            const commp = commpInput.value.trim();
+            if (!commp) {
+                showResult('Please enter a valid CommP.', false);
+                return;
+            }
+            
+            try {
+                // Call the demo app's server-side verification endpoint
+                const response = await fetch('/api/verify-event', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ commp })
+                });
+                
+                const status = await response.json();
+                
+                if (response.ok) {
+                    showVerificationResult(status);
+                } else {
+                    showVerificationResult({ error: status.error || 'Verification failed.' });
+                }
+            } catch (error) {
+                console.error('Verification error:', error);
+                showVerificationResult({ error: `Error: ${error.message}` });
+            }
+        }
+        
         // Add event listeners to buttons
         getDataButton.addEventListener('click', getData);
         postDataButton.addEventListener('click', postData);
+        verifyDataButton.addEventListener('click', verifyData);
     </script>
 </body>
 </html>

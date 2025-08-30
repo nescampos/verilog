@@ -34,8 +34,6 @@ app.use(async (req, res, next) => {
   const logEntry = {
     timestamp: new Date().toISOString(),
     method: req.method,
-    sourceId: 'demo-server', // Static sourceId for demo
-    eventType: 'http-request',
     url: req.url,
     headers: req.headers,
     userAgent: req.get('User-Agent'),
@@ -75,6 +73,31 @@ app.post('/api/data', (req, res) => {
     received: req.body,
     timestamp: new Date().toISOString()
   });
+});
+
+// New endpoint for verification - this handles the server-side call to the Filecoin API
+app.post('/api/verify-event', async (req, res) => {
+  try {
+    const { commp } = req.body;
+
+    if (!commp || typeof commp !== 'string') {
+      return res.status(400).json({ error: 'A valid "commp" string is required.' });
+    }
+
+    // Use the client library to call the Filecoin API's verify endpoint
+    const status = await logClient.verifyEvent(commp);
+    
+    // Return the status from the Filecoin API
+    res.status(200).json(status);
+  } catch (error) {
+    console.error('Error verifying event in demo app:', error);
+    // Handle potential error formats from the client
+    if (error.message) {
+      res.status(500).json({ error: `Verification failed: ${error.message}` });
+    } else {
+      res.status(500).json({ error: 'An unknown error occurred during verification.' });
+    }
+  }
 });
 
 // Serve the main HTML file for all other routes
