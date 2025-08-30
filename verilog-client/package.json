@@ -1,13 +1,13 @@
 {
-  "name": "filecoin-log-client",
+  "name": "verilog-client",
   "version": "1.0.0",
-  "description": "Client library to send HTTP log data to a Filecoin storage API.",
+  "description": "Client library for Verilog.",
   "main": "src/index.js",
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": ["filecoin", "log", "client"],
-  "author": "Your Name",
+  "author": "Néstor Campos",
   "license": "MIT"
 }

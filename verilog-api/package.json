@@ -1,7 +1,7 @@
 {
-  "name": "filecoin-log-api",
+  "name": "verilog-api",
   "version": "1.0.0",
-  "description": "API to receive HTTP log data and store it on Filecoin",
+  "description": "Verilog: API to receive HTTP log data and store it on Filecoin",
   "main": "src/server.js",
   "type": "module",
   "scripts": {
@@ -10,7 +10,7 @@
     "setup-payments": "node src/setupPayments.js"
   },
   "keywords": ["filecoin", "log", "api"],
-  "author": "Your Name",
+  "author": "Néstor Campos",
   "license": "MIT",
   "dependencies": {
     "dotenv": "^16.0.0",

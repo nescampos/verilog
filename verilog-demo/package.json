@@ -1,7 +1,7 @@
 {
-  "name": "filecoin-log-demo",
+  "name": "verilog-demo",
   "version": "1.0.0",
-  "description": "Demo web app to test the Filecoin log client library",
+  "description": "Demo web app for Verilog",
   "main": "server.js",
   "type": "module",
   "scripts": {
@@ -13,7 +13,7 @@
     "log",
     "demo"
   ],
-  "author": "Your Name",
+  "author": "Nestor Campos",
   "license": "MIT",
   "dependencies": {
     "express": "^4.18.0",
